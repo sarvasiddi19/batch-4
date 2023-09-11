@@ -1,0 +1,410 @@
+Ansgible (by me)
+Command to install ansible
+initially we need to install epel software(which must be enabled)
+yum install epel -release
+then
+yum update -y
+then we need to enable epel by the below command
+sudo yum-config-manager --enable epel
+
+there are some depencency packages used to install or run ansible
+command for that is 
+yum install git python python-devel python-pip openssl ansible
+----------------------------------------------------------------
+after installing we have to go to etc/ansible/ansible.cfg
+In that we have to enable the inventory and sudo su for accessing purpose
+-----------------------------------------------------------------------------------------------------------
+then we have to create same user name and password in controller and cliend machines
+ex:
+useradd Mani
+passwd Mani
+
+Then we have to give all permisions to user (in Slave)
+visudo
+in that under
+Username ALL=(ALL) nopasswd : ALL
+
+then we have to move vi /etc/ssh/sshd_config
+and enable the 
+PasswordAuthentication Yes
+
+(we have to perform this operation in client server also
+)
+--------------------------------------------------------------------
+user ccount name can be modified by goto "/etc/ansible/ansible.cfg"
+	Then go to sudo_user = (User name)
+	then save
+	
+	
+fetch module is used to get the information from master node to slave node
+
+-Name = dragging
+ hosts = name or group
+ become = yes
+ taske:
+   name: Fetching the date
+   -fetch:
+      src = src_path
+	  dest = des_path
+
+================================================================================
+
+setting group name
+vi etc/ansible/hosts
+from home directory
+add group name
+[groupname 1]
+ip address1 or host name
+ip address2 or host name
+
+[groupname 2]
+ip address1 or host name
+ip address2 or host name
+
+steps to configure password login:
+
+Firstly we have to take controller machie and node machines
+then we have to generate in controler machine
+ssh -keygen
+these keys saved in /home/.ssh/
+---------------------
+then we have to paste this key to node machines
+ssh-copy-id ec2-user@(public id of node machine)
+
+Ansible Commands:
+
+ansible -m ping (servername)
+
+Command to check all the connections
+
+ansible -m ping all
+
+ansible -b -m "cat /var/www/html/index.html"
+-b represents the command should be run by sudo or root user
+-a represents the command which is under double quotes
+command to run a program in a specific server
+ansible -m ssh -a "yum install httpd" (node)
+
+or
+
+ansible -m service -a "name=httpd state=started" (node)
+
+If we want to access or call custom inventory we have to user below commands to check
+
+ansible all -i IPADDRESS, -m ping (For ipaddress based)
+ansible all -i /opt/hosts -m ping(For path based)
+i represents custon inventory
+
+If we want to check the slave machine reachable or not we have to use "wait" module
+
+ansible -m all setup | setup
+Which is a command used to check teh servers details
+
+----------------------------------------------------------------------------------------------
+Play boook:
+
+agent based chef(cookbook) and puppet):which has to install agent in both controller and guest machines and it is a pull based approach)
+agent less:we dont need to install any softwares to guest machines and it is a push based approach
+
+-a =arbitary 
+-b =become
+-------------------------------------------------------
+Ansible
+
+Ansible is a configuration management tool:
+which uses playbooks 
+playbooks uses yaml language
+its a agent less configuration management tool
+
+connecting controllernmachine to server:
+
+
+ansible webserver -b -a "cat /var/log/messages
+-b uses for sudo permissions
+-i dynamic inventory
+-m module
+ docs.ansible.com >> which uses to help in ansible commands
+ 
+ ansible ec2-user -b copy -a "src=parameter1 dest=parametr2"
+ before applying this command we have to touch the file which we have to copy
+ 
+ to install th software
+ ansible common -b yum -a "name=elinks state=t  "
+ 
+ 
+ ubuntu:
+ -apt
+ -apache2
+ 
+ centos:
+ -y-um
+ -httpd
+ 
+ getting the system information:
+ ansible webserver -m setup
+ 
+ hosts location should be in 
+ vi etc/ansible/hosts
+ 
+ we need to provide the groupd name in [ ](square brackets and under this we have to provide the private ip addresses of servers which we have to hosts
+ 
+ command used to check the host systems are working or not
+ ansible -m ping "name of the group"
+ 
+ 
+ yaml:yet another markup languaguage
+ Playbook is used to give the instruction (such as installing deploying code like that) from the controller system by ansible
+ 
+ playbook contains:
+ name:Name of the function to be performed
+ hosts:name of the group or private ips of required systems
+ become:Yes
+ 
+ vars:
+ type of software to be installed or code to be deployed
+ 
+ tasks:
+ -name:Name of the software
+ yum:<Code to isnstall the tool>
+
+-----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------
+
+by Venkat sir 
+
+dt: 29-04-2020
+
+Playbooks Concept:
+we can use yaml and j son languages to decode the playbooks
+
+-playbooks are used to define the sequence of the tasks(not only one task) to be executed on a group of hosts
+-contains variables,tasks.handlers,files,templates and roles
+started with "---"	
+Terms containing Playbooks:
+Declaration:
+	
+	-hosts:Target group
+	-become:yes(which is applicable to sudo permissions)
+
+var:
+	pkgName:tomcat
+
+Tasks:
+-module(yum)
+	parameters(examples given below)
+	 name:httpd or {{pkgName}} for tomcat
+	 state:latest
+-copy:
+	src:webapps.war
+	dest:TOMCAT_HOME/webapps
+	notify:tomcat(which is used to restart the tomcat server)
+	
+	handler: (It is used to perform the required function as mentioned in notify command)
+	
+		-service
+		-name:tomcat
+		-state:restarted
+		-enable:yes
+--------------------------------------------------------------------------------------------------------------------------------------------------------------------
+(30-04-2020)
+command to run the playbook in target group
+ansible-playbook "playbook name"
+this command should be run from the controller system
+
+if we dont know about the OS of the target group machines
+we have to write the if command in playbooks
+ex:
+tasks:
+	-name:if OS is redhat installation
+yum:
+	name:httpd
+	state:present
+	when:ansible_os_family='Redhat" 
+	
+lineinfile performing the operation in a specific line
+
+ex:
+lineinfile:
+path: etc/surender
+state:absent
+regex:Mani
+
+which absents the lines that contains Mani in the given path files
+
+ex2:
+vr = appserver
+
+lineinfile:
+path: etc/centos.conf
+state:present
+regex:Hosename:{{appserver}}
+
+debug:
+which is another type of method to perform functions
+which represents the custom messages when the required file is not there
+-------------------------------------------------------------------------------------------------------------------------------------------------
+[1-05-2020]
+we must have to write indentation for every playbook(---space)
+otherwise we will get syntax error
+--------------------------------------------------------------------------------------------
+Multiple tasks on multiple servers in a single play book:
+Yes,we can define it it single playbook
+------------------------------------------------------------------------------
+Iterations:
+if we want to do same task more than 20 to 30times,we can install/check then in single time
+we will use with_items 
+----------------------------------------------------------------------------------------------------------
+we can user 1 playbook for multiple environments or goups and multiple tasks
+fot this operation we have to set the ansible roles 
+ansible roles are used to reduce the time for repetetive process(just like of we want to do service related  operations, we dont neeed to write service related commands every time we have to write it in roles file and place it under roles section)
+we have to creae different directories for each and every operation file
+like in vars directory we have to create .yml file
+in handler diectory we have to create .yml file
+in that folder we have to addresses
+	-tasks
+	-files
+	-vars
+	-handlers
+	-templates
+now in playbook we have to add those operation programs
+ex:(pattern)
+	host:
+	become:
+	roles:
+		(we ahve too paste the folders located in /eyc/ansible/roles/)
+		-folder1(tasks file ):
+		-folder2(handlers file):
+		-folder3(servicesfile):
+		-folder4(templates file):.
+		
+------------------------------------------------------------------------------------------------------------------
+readymade roles available in internet 
+	-Ansible galaxy(galaxy.ansible.com)
+	search the role what you want
+	select the role
+	copy the path in that webpage
+	paste it in your controller machine to download
+	Command to install the role
+	"ansible-galaxy rolename"
+	ans the role will be installed in /etc/ansble/roles directory
+	the we have to create the playbook and we have to paste the role folder name in the playbook and run it 
+	
+	ex:
+	/etc/ansible $vi main.yml	---
+	-Name:Installation
+	 host:webserver
+	 become:yes
+	 become_user:root
+	 roles:
+		 -(rolename which we have  installed)
+Save the file
+
+Command to check the syntax
+$ansible-playbook main.yml --syntax-check
+
+Command to run the playbook:
+$ansible-playbook mainyml
+	
+or 
+
+$ansible-playbook main.yml (groupname)	
+	
+	
+	then roles will add in playbook
+default directory for ansible roles is home/.ansible/roles/
+(we have to save the roles directory in  the above location)
+forexample if we want to installtomcat 
+we have to add the operation files(.yml format) in tomcat named directory
+and we have to add that folder name under roles section in playbook
+then we have t run the playbook in controller machine's ansible/roles directory
+
+Steps to create ansible galaxy roles
+ initially we have to be in /etc/ansible/roles/
+ then we have to create a directory which conatins empty role directories with the below command 
+ ansible-galaxy init directory name
+ Ex: ansible-galaxy init sampleroles
+automatically that folder contains some files
+(Command is used to get the directory structure fpor roles)
+
+defaults:Contains default variables that are going to be used by the role 
+files:
+handlers:
+Meta:
+tasks:
+templates:
+vars:
+
+---------------------------------------------------------------------------------------------------------------------------
+
+we are
+
+
+
+Playbook mainly contains 
+Hosts:
+variables
+tasks:
+Handlers:
+
+
+Ex:
+---
+-hosts:webserver
+ tasks:
+	name:install apache2
+	yum:
+		name=apache2
+		update_cahe=yes
+		state=latest
+ notify:
+	-restart apache2
+ handlers:
+	-name:restart apache2
+	-service:
+			name=apache 
+			state=restarted
+
+
+ become: yes
+ become_user: Mani
+ tasks:
+   name: installing httpd
+   yum:
+     name:httpd
+     state: latest
+   name: starting httpd
+   systemctl:
+       name: httpd
+       service: started
+	   
+- name: httpd installation
+  hots: mserver
+  become: yes
+  become_user: Mani
+  tasks:
+    name: installing httpd
+    yum:
+      name: httpd
+      state: latest
+    name: starting httpd
+      systemctl:
+        name: httpd
+        service: started
+
+
+
+
+
+7498709B4ABC133E10F2F666CDDFBAC3
+
+If else fucntion
+
+Try 
+catch
+
+Which syntax used for variable in scripted pipeline
+def 
+
+Ansible® Tower you can centralize and control your IT infrastructure with a visual dashboard, role-based access control, job scheduling, integrated notifications and graphical inventory management.
+
+
+
